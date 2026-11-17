@@ -1,48 +1,89 @@
-name: Build VYBE Android APK (Cloud)
+
+name: Build VYBE Android APK
 
 on:
   workflow_dispatch:
   push:
-    branches: [main, master]
+    branches:
+      - main
+      - master
 
 permissions:
   contents: read
 
 jobs:
-  android-apk:
+  build:
+    name: Build VYBE APK
     runs-on: ubuntu-latest
     timeout-minutes: 45
+
     steps:
-      - name: Get VYBE source
+      - name: Checkout VYBE Project
         uses: actions/checkout@v4
+
       - name: Install Java 17
         uses: actions/setup-java@v4
         with:
           distribution: temurin
           java-version: '17'
+
       - name: Install Android SDK
         uses: android-actions/setup-android@v3
-      - name: Install Android SDK platform 35
-        run: sdkmanager "platforms;android-35" "build-tools;35.0.0"
-      - name: Install Gradle 8.9 in the cloud
+        with:
+          packages: 'platform-tools platforms;android-35 build-tools;35.0.0'
+
+      - name: Set up Gradle cache
         uses: gradle/actions/setup-gradle@v4
         with:
           gradle-version: '8.9'
-      - name: Compile VYBE debug APK
-        run: gradle --no-daemon --stacktrace --console=plain :app:assembleDebug
+          cache-read-only: false
+
+      - name: Locate Android Project
+        shell: bash
+        run: |
+          if [ -f "settings.gradle.kts" ] || [ -f "settings.gradle" ]; then
+            echo "PROJECT_DIR=." >> "$GITHUB_ENV"
+          elif [ -f "VYBE_Android/settings.gradle.kts" ] || [ -f "VYBE_Android/settings.gradle" ]; then
+            echo "PROJECT_DIR=VYBE_Android" >> "$GITHUB_ENV"
+          else
+            echo "ERROR: Android Gradle project not found."
+            exit 1
+          fi
+
+      - name: Build Debug APK
+        shell: bash
+        run: |
+          cd "$PROJECT_DIR"
+          gradle assembleDebug \
+            --build-cache \
+            --stacktrace \
+            --console=plain
+
+      - name: Verify APK
+        shell: bash
+        run: |
+          APK="$PROJECT_DIR/app/build/outputs/apk/debug/app-debug.apk"
+          if [ ! -f "$APK" ]; then
+            echo "ERROR: APK was not generated."
+            exit 1
+          fi
+          ls -lh "$APK"
+
       - name: Upload VYBE APK
-        if: success()
         uses: actions/upload-artifact@v4
         with:
-          name: VYBE-debug-APK
-          path: app/build/outputs/apk/debug/app-debug.apk
+          name: VYBE-Android-Debug-APK
+          path: |
+            **/app/build/outputs/apk/debug/*.apk
           if-no-files-found: error
-      - name: Upload build diagnostics if failed
+          retention-days: 14
+
+      - name: Upload Build Reports on Failure
         if: failure()
         uses: actions/upload-artifact@v4
         with:
-          name: VYBE-build-reports
+          name: VYBE-Build-Reports
           path: |
-            app/build/reports/**
-            build/reports/**
+            **/build/reports/**
           if-no-files-found: ignore
+          retention-days: 7
