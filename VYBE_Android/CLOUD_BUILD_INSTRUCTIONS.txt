@@ -1,0 +1,26 @@
+VYBE — CLOUD APK BUILDER (WINDOWS 11)
+====================================
+This is an ALTERNATIVE to running the build on your Windows computer.
+The cloud still uses Gradle to compile Android code, but no local Gradle daemon runs.
+
+HOW TO BUILD (requires a free GitHub account and internet):
+1. Extract this ZIP. Open the VYBE_Android folder.
+2. Create a new GitHub repository at https://github.com/new (private is fine).
+3. Upload ALL contents of VYBE_Android to the repository ROOT, including the hidden
+   .github folder. If GitHub web upload hides dotfolders, use GitHub Desktop or git.
+4. Open your repository's Actions tab.
+5. Select 'Build VYBE Android APK (Cloud)' and click 'Run workflow'.
+   The workflow also runs automatically after a push to main/master.
+6. Wait for a green check mark. Open the completed run, scroll to Artifacts,
+   and download 'VYBE-debug-APK'. Unzip it to get app-debug.apk.
+7. Transfer app-debug.apk to your Android phone and install it.
+   You may need to allow installs from the app you used to open the APK.
+
+IF BUILD FAILS: Open the failed job, expand 'Compile VYBE debug APK', and share
+its FIRST actual ERROR lines (not just the daemon startup message).
+
+NOTE: This package is SOURCE CODE, NOT a precompiled APK. It has NOT been
+compiled or installed in this environment. The app itself is still a prototype.
+The original local BUILD_APK.bat remains for optional local builds.
+Cloud builds can still fail on source-code errors; moving to cloud does not
+fix Android compilation errors. GitHub Actions usage limits may apply.
